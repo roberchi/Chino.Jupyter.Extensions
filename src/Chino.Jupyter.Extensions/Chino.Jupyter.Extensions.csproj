@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Chino.Jupyter.Extensions</AssemblyName>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>.NET kernel extensions for Jupyter notbook</PackageDescription>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Chino.Jupyter.Extensions</PackageId>
+    <Authors>Roberto Chinelli</Authors>
+    <Company></Company>
+    <Product>.NET kernel extensions for Jupyter notbook</Product>
+    <PackageOutputPath>../../build/nupkg</PackageOutputPath>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <FileVersion>1.0.4.0</FileVersion>
+    <VersionPrefix>1.0.4</VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
+    <OutputPath>..\..\build\bin\$(AssemblyName)</OutputPath>
+    
+</PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="bin\**" />
+    <EmbeddedResource Remove="bin\**" />
+    <None Remove="bin\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="microsoft.dotnet.interactive" Version="1.0.0-beta.20121.20" />
+    <PackageReference Include="microsoft.dotnet.interactive.formatting" Version="1.0.0-beta.20121.20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)/$(AssemblyName).dll" Pack="true" PackagePath="interactive-extensions/dotnet" />
+  </ItemGroup>
+
+
+</Project>
