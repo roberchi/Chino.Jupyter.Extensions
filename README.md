@@ -1,3 +1,5 @@
 # This is an extension for .NET CSharp Kernel for Jupyter Notebook
-The estension available is import .NTE notebook as module
-The directive is #!iport [path to notebook]  
+The estension available in this assembly allow to import .NTE notebook as module
+The directive is #!import [path to notebook]  
+For example:
+    #!import lib\mynotebook
