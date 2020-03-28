@@ -18,6 +18,10 @@
     <VersionPrefix>1.0.4</VersionPrefix>
     <VersionSuffix>alpha</VersionSuffix>
     <OutputPath>..\..\build\bin\$(AssemblyName)</OutputPath>
+    <RepositoryUrl></RepositoryUrl>
+    <PackageProjectUrl>https://github.com/roberchi/Chino.Jupyter.Extensions</PackageProjectUrl>
+    <Version>1.0.4-beta</Version>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     
 </PropertyGroup>
 
@@ -25,6 +29,10 @@
     <Compile Remove="bin\**" />
     <EmbeddedResource Remove="bin\**" />
     <None Remove="bin\**" />
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

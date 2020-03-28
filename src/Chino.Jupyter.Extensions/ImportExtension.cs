@@ -19,11 +19,10 @@ namespace Chino.Jupiter.Extensions
             {
                 var importCommand = new Command("#!import", "Import a notebook as a module.");
                 importCommand.AddArgument(new Argument<string>("notebook"));
-                importCommand.AddOption(new Option<string>(new[] { "-ns", "--namespace" }, "Namespace to wrap imported notebook, default is notebook name"));
-                importCommand.AddOption(new Option<bool>(new[] { "-v", "--verbose" }, "Display imported notebook output"));
+//                importCommand.AddOption(new Option<bool>(new[] { "-v", "--verbose" }, "Display imported notebook output"));
                 
                 importCommand.Handler = CommandHandler.Create(
-                    async (string notebook, string ns, bool? ver, KernelInvocationContext context) =>
+                    async (string notebook, bool? ver, KernelInvocationContext context) =>
                     {
                         if (string.IsNullOrWhiteSpace(notebook))
                         {
@@ -31,13 +30,11 @@ namespace Chino.Jupiter.Extensions
                             return;
                         }
 
-                        ns = GetValidNamespace(string.IsNullOrEmpty(ns)?Path.GetFileNameWithoutExtension(notebook):ns);
-                        
                         var notebookPath = Path.Combine(System.IO.Directory.GetCurrentDirectory(),
                             Path.GetDirectoryName(notebook),
                             Path.GetFileNameWithoutExtension(notebook) + ".ipynb");
 
-                        await context.DisplayAsync(new HtmlString($@"<b>Loading notebook {notebookPath} ...</b>"));
+                        await context.DisplayAsync(new HtmlString($@"Loading notebook <b>{notebook}</b> [{notebookPath}] ..."));
 
                         // load notebook cells
                         var json = await File.ReadAllTextAsync(notebookPath);
@@ -47,16 +44,12 @@ namespace Chino.Jupiter.Extensions
                         //if (jpynb.Metadata.Kernelspec.Name != context.HandlingKernel.Name)
                         //    throw new InvalidOperationException($"Kernel '{jpynb.Metadata.Kernelspec.Name}' not supported");
 
-                        // foreach cells get kernel and call HandleSubmitCode
-
-                        //context.CurrentKernel.KernelEvents.Subscribe(e => context.DisplayAsync(e.ToDisplayString()).GetAwaiter().GetResult()) ;
                         foreach (var cell in jpynb.Cells.Where(c=> c.CellType == CellType.Code))
                         {
                             var result = await context.CurrentKernel.SubmitCodeAsync(string.Join("\n",cell.Source));
-                           
                         }
 
-                        await context.DisplayAsync(new HtmlString($@"<b>Notebook {notebook} loaded</b>"));
+                        await context.DisplayAsync(new HtmlString($@"notebook <b>{notebook}</b> loaded"));
 
                     });
 
@@ -65,7 +58,7 @@ namespace Chino.Jupiter.Extensions
 
             if (KernelInvocationContext.Current is { } context)
             {
-                await context.DisplayAsync($"`{nameof(ImportExtension)}` is loaded. It adds the import notebook as module. Try it by running: `#!import path\\name`", "text/markdown");
+                await context.DisplayAsync($"`{nameof(ImportExtension)}` is loaded. It adds the import notebook as module. Try it by running: `#!import path\\notebook name`", "text/markdown");
             }
         }
 
