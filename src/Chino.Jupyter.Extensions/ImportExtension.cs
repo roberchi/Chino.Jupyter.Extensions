@@ -8,58 +8,79 @@ using Microsoft.AspNetCore.Html;
 using Microsoft.DotNet.Interactive;
 using Microsoft.DotNet.Interactive.Formatting;
 using Chino.Jupiter.Extensions.JupyterNotebook;
+using System.CommandLine.NamingConventionBinder;
+using Microsoft.DotNet.Interactive.Events;
+using Microsoft.DotNet.Interactive.CSharp;
 
 namespace Chino.Jupiter.Extensions
 {
     public class ImportExtension : IKernelExtension
     {
-        public async Task OnLoadAsync(IKernel kernel)
+        const string MAGIC_CMD = "#!import";
+        static Command importCommand;
+
+        public Task OnLoadAsync(Kernel kernel)
         {
-            if (kernel is KernelBase kernelBase)
-            {
-                var importCommand = new Command("#!import", "Import a notebook as a module.");
-                importCommand.AddArgument(new Argument<string>("notebook"));
+            importCommand = new Command(MAGIC_CMD, "Import a notebook as a module.");
+            importCommand.AddArgument(new Argument<string>("notebook"));
 //                importCommand.AddOption(new Option<bool>(new[] { "-v", "--verbose" }, "Display imported notebook output"));
                 
-                importCommand.Handler = CommandHandler.Create(
-                    async (string notebook, bool? ver, KernelInvocationContext context) =>
+            importCommand.Handler = CommandHandler.Create(
+                async (string notebook, bool? ver, KernelInvocationContext context) =>
+                {
+                    if (string.IsNullOrWhiteSpace(notebook))
                     {
-                        if (string.IsNullOrWhiteSpace(notebook))
-                        {
-                            await context.DisplayAsync(new HtmlString($@"<b>Missing Notebook path argument</b>"));
-                            return;
-                        }
+                        context.Display(new HtmlString($@"<b>Missing Notebook path argument</b>"));
+                        return;
+                    }
 
-                        var notebookPath = Path.Combine(System.IO.Directory.GetCurrentDirectory(),
-                            Path.GetDirectoryName(notebook),
-                            Path.GetFileNameWithoutExtension(notebook) + ".ipynb");
+                    var notebookPath = Path.Combine(System.IO.Directory.GetCurrentDirectory(),
+                        Path.GetDirectoryName(notebook),
+                        Path.GetFileNameWithoutExtension(notebook) + ".ipynb");
 
-                        await context.DisplayAsync(new HtmlString($@"Loading notebook <b>{notebook}</b> [{notebookPath}] ..."));
+                    context.Display(new HtmlString($@"Loading notebook <b>{notebook}</b> [{notebookPath}] ..."));
 
-                        // load notebook cells
-                        var json = await File.ReadAllTextAsync(notebookPath);
-                        var jpynb = Notebook.FromJson(json);
+                    // load notebook cells
+                    var json = await File.ReadAllTextAsync(notebookPath);
+                    var jpynb = Notebook.FromJson(json);
 
-                        // verify notebook is .net notebook
-                        //if (jpynb.Metadata.Kernelspec.Name != context.HandlingKernel.Name)
-                        //    throw new InvalidOperationException($"Kernel '{jpynb.Metadata.Kernelspec.Name}' not supported");
+                    // verify notebook is .net notebook
+                    //if (jpynb.Metadata.Kernelspec.Name != context.HandlingKernel.Name)
+                    //    throw new InvalidOperationException($"Kernel '{jpynb.Metadata.Kernelspec.Name}' not supported");
 
-                        foreach (var cell in jpynb.Cells.Where(c=> c.CellType == CellType.Code))
-                        {
-                            var result = await context.CurrentKernel.SubmitCodeAsync(string.Join("\n",cell.Source));
-                        }
+                    //string directives = string.Join("\n", context.HandlingKernel.Directives.Select(d => d.Name));
+                    //try { 
+                    if (!context.HandlingKernel.Directives.Contains(importCommand))
+                    {
+                        context.HandlingKernel.AddDirective(importCommand);
+                    }
+                    //} catch (Exception ex) { }
+                    //context.Display(new HtmlString($@"directive names <b>{directives}</b>"));
 
-                        await context.DisplayAsync(new HtmlString($@"notebook <b>{notebook}</b> loaded"));
+                    int i = 0;
+                    foreach (var cell in jpynb.Cells.Where(c=> c.CellType == CellType.Code))
+                    {
+                        var theCode = string.Join("\n", cell.Source);
 
-                    });
+                        context.Display(new HtmlString(i + theCode.Replace("\n", "<br>")));
+                        
+                        var result = await context.HandlingKernel.SubmitCodeAsync(string.Join("\n",cell.Source));
 
-                kernelBase.AddDirective(importCommand);
-            }
+                        context.Display(new HtmlString("done " + i));
+                        i++;
+                    }
+
+                    context.Display(new HtmlString($@"notebook <b>{notebook}</b> loaded"));
+                });
+
+            kernel.AddDirective(importCommand);
 
             if (KernelInvocationContext.Current is { } context)
             {
-                await context.DisplayAsync($"`{nameof(ImportExtension)}` is loaded. It adds the import notebook as module. Try it by running: `#!import path\\notebook name`", "text/markdown");
+                $"`{nameof(ImportExtension)}` is loaded. It adds the import notebook as module. Try it by running: `{MAGIC_CMD} path\\notebook name.ipynb`".DisplayAs("text/markdown");
             }
+
+            return Task.CompletedTask;
         }
 
         private static string GetValidNamespace(string ns)
