@@ -1,16 +1,13 @@
+using Microsoft.AspNetCore.Html;
+using Microsoft.DotNet.Interactive;
+using Microsoft.DotNet.Interactive.Documents;
+using Microsoft.DotNet.Interactive.Documents.Jupyter;
 using System;
 using System.CommandLine;
-using System.CommandLine.Invocation;
+using System.CommandLine.NamingConventionBinder;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Html;
-using Microsoft.DotNet.Interactive;
-using Microsoft.DotNet.Interactive.Formatting;
-using Chino.Jupiter.Extensions.JupyterNotebook;
-using System.CommandLine.NamingConventionBinder;
-using Microsoft.DotNet.Interactive.Events;
-using Microsoft.DotNet.Interactive.CSharp;
 
 namespace Chino.Jupiter.Extensions
 {
@@ -19,12 +16,14 @@ namespace Chino.Jupiter.Extensions
         const string MAGIC_CMD = "#!import";
         static Command importCommand;
 
+        static string[] SUPPORTED_LANGUAGES = { "csharp","fsharp","javascript", "pwsh" };
+
         public Task OnLoadAsync(Kernel kernel)
         {
             importCommand = new Command(MAGIC_CMD, "Import a notebook as a module.");
             importCommand.AddArgument(new Argument<string>("notebook"));
-//                importCommand.AddOption(new Option<bool>(new[] { "-v", "--verbose" }, "Display imported notebook output"));
-                
+            //importCommand.AddOption(new Option<bool>(new[] { "-v", "--verbose" }, "Display imported notebook output"));
+
             importCommand.Handler = CommandHandler.Create(
                 async (string notebook, bool? ver, KernelInvocationContext context) =>
                 {
@@ -42,32 +41,31 @@ namespace Chino.Jupiter.Extensions
 
                     // load notebook cells
                     var json = await File.ReadAllTextAsync(notebookPath);
-                    var jpynb = Notebook.FromJson(json);
+                    var jpynb = Notebook.Parse(json);
 
                     // verify notebook is .net notebook
-                    //if (jpynb.Metadata.Kernelspec.Name != context.HandlingKernel.Name)
-                    //    throw new InvalidOperationException($"Kernel '{jpynb.Metadata.Kernelspec.Name}' not supported");
+                    //string kernelspecName = ((dynamic)jpynb.Metadata["kernelspec"])["name"];
+                    //if (kernelspecName != context.HandlingKernel.Name)
+                    //    throw new InvalidOperationException($"Kernel '{kernelspecName}' not supported");
 
-                    //string directives = string.Join("\n", context.HandlingKernel.Directives.Select(d => d.Name));
-                    //try { 
+                    //this is to support nested notebook-as-module loading
                     if (!context.HandlingKernel.Directives.Contains(importCommand))
                     {
                         context.HandlingKernel.AddDirective(importCommand);
                     }
-                    //} catch (Exception ex) { }
-                    //context.Display(new HtmlString($@"directive names <b>{directives}</b>"));
 
                     int i = 0;
-                    foreach (var cell in jpynb.Cells.Where(c=> c.CellType == CellType.Code))
+                    foreach (InteractiveDocumentElement cell in jpynb)
                     {
-                        var theCode = string.Join("\n", cell.Source);
+                        if (SUPPORTED_LANGUAGES.Contains(cell.Language))
+                        {
+                            //context.Display(new HtmlString(i + " " + cell.Contents.Replace(Environment.NewLine,"<br/>")));
 
-                        context.Display(new HtmlString(i + theCode.Replace("\n", "<br>")));
-                        
-                        var result = await context.HandlingKernel.SubmitCodeAsync(string.Join("\n",cell.Source));
+                            var result = await context.HandlingKernel.SubmitCodeAsync(cell.Contents);
 
-                        context.Display(new HtmlString("done " + i));
-                        i++;
+                            //context.Display(new HtmlString("done " + i));
+                            i++;
+                        }
                     }
 
                     context.Display(new HtmlString($@"notebook <b>{notebook}</b> loaded"));

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -20,7 +20,7 @@
     <OutputPath>..\..\build\bin\$(AssemblyName)</OutputPath>
     <RepositoryUrl></RepositoryUrl>
     <PackageProjectUrl>https://github.com/roberchi/Chino.Jupyter.Extensions</PackageProjectUrl>
-    <Version>1.0.5-beta</Version>
+    <Version>1.0.6-beta</Version>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     
 </PropertyGroup>
@@ -36,8 +36,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="microsoft.dotnet.interactive" Version="1.0.0-beta.22452.2" />
-    <PackageReference Include="microsoft.dotnet.interactive.formatting" Version="1.0.0-beta.22452.2" />
+    <PackageReference Include="Microsoft.DotNet.Interactive" Version="1.0.0-beta.22452.2" />
+    <PackageReference Include="Microsoft.DotNet.Interactive.Documents" Version="1.0.0-beta.22452.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
